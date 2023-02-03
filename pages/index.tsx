@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import fileDownload from 'js-file-download'
 import { useState } from 'react'
 
@@ -6,9 +6,14 @@ export default function Home() {
   const [targetPublic, setTargetPublic] = useState<string[]>([])
   const [first, setFirst] = useState<string>('10')
   const [excludeSC2S, setExcludeSC2S] = useState(false)
+  const [error, setError] = useState<string | undefined>()
+  const [isLoading, setIsLoading] = useState(false)
 
   const downloadFile = async () => {
     try {
+      setError(undefined)
+      setIsLoading(true)
+
       const response = await axios.get(
         `api/missions?publicBeneficiaries=${targetPublic.join(
           '%2C'
@@ -28,7 +33,11 @@ export default function Home() {
           'fr'
         )}.xlsx`
       )
-    } catch (error) {}
+    } catch (error) {
+      setError((error as AxiosError).message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (publicString: string) => {
@@ -125,7 +134,7 @@ export default function Home() {
 
       <div className="element">
         <label htmlFor="first" className="margin-right">
-          <b>Chercher les X missions les plus récentes</b>
+          <b>Chercher parmi les X missions les plus récentes</b>
         </label>
         <input
           id="first"
@@ -149,7 +158,16 @@ export default function Home() {
         <label htmlFor="exclude">Exclure les missions SC2S</label>
       </div>
 
-      <button onClick={() => downloadFile()}>Télécharger Excel</button>
+      <button className="element" onClick={() => downloadFile()}>
+        Télécharger Excel
+      </button>
+
+      {error && <div className="element">ERROR: {error}</div>}
+      {isLoading && (
+        <div>
+          Chargement en cours ... (cela peut prendre plusieurs minutes !)
+        </div>
+      )}
     </>
   )
 }

@@ -44,8 +44,9 @@ export default async function handler(
       const edge = response.data.edges[i]
 
       if (
-        !edge.node.title.toLowerCase().includes('sc2s') ||
-        req.query.excludeSC2S === 'false'
+        (!edge.node.title.toLowerCase().includes('sc2s') ||
+          req.query.excludeSC2S === 'false') &&
+        edge.node.status === 'published'
       ) {
         row.getCell(1).value = edge.node.title
         row.getCell(2).value = edge.node.organization.name
