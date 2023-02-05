@@ -1,6 +1,11 @@
 import axios, { AxiosError } from 'axios'
 import fileDownload from 'js-file-download'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ReadyState } from 'react-use-websocket'
+import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket'
+import { v4 as uuidv4 } from 'uuid'
+
+const uuid = uuidv4()
 
 export default function Home() {
   const [targetPublic, setTargetPublic] = useState<string[]>([])
@@ -9,16 +14,27 @@ export default function Home() {
   const [error, setError] = useState<string | undefined>()
   const [isLoading, setIsLoading] = useState(false)
 
+  const { lastMessage, readyState, getWebSocket } = useWebSocket(
+    process.env.NEXT_PUBLIC_WS_URL ?? '',
+    {
+      queryParams: { wsClientId: uuid },
+    }
+  )
+
   const downloadFile = async () => {
     try {
       setError(undefined)
       setIsLoading(true)
 
       const response = await axios.get(
-        `api/missions?publicBeneficiaries=${targetPublic.join(
-          '%2C'
-        )}&first=${first}&excludeSC2S=${excludeSC2S}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/missions`,
         {
+          params: {
+            publicBeneficiaries: targetPublic.join('%2C'),
+            first,
+            excludeSC2S,
+            wsClientId: uuid,
+          },
           responseType: 'arraybuffer',
         }
       )
@@ -50,6 +66,12 @@ export default function Home() {
       setTargetPublic([...targetPublic, publicString])
     }
   }
+
+  useEffect(() => {
+    const socket = getWebSocket()
+
+    return () => socket?.close()
+  }, [getWebSocket])
 
   return (
     <>
@@ -158,16 +180,21 @@ export default function Home() {
         <label htmlFor="exclude">Exclure les missions SC2S</label>
       </div>
 
-      <button className="element" onClick={() => downloadFile()}>
+      <button
+        className="element"
+        onClick={() => downloadFile()}
+        disabled={readyState !== ReadyState.OPEN}
+      >
         Télécharger Excel
       </button>
 
       {error && <div className="element">ERROR: {error}</div>}
       {isLoading && (
-        <div>
+        <div className="element">
           Chargement en cours ... (cela peut prendre plusieurs minutes !)
         </div>
       )}
+      {lastMessage && isLoading && <div>{lastMessage.data}</div>}
     </>
   )
 }
