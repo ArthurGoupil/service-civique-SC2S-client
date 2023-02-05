@@ -26,20 +26,24 @@ export default function Home() {
       setError(undefined)
       setIsLoading(true)
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/missions`,
-        {
-          params: {
-            publicBeneficiaries: targetPublic.join('%2C'),
-            first,
-            excludeSC2S,
-            wsClientId: uuid,
-          },
-          responseType: 'arraybuffer',
-        }
-      )
+      axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/missions`, {
+        params: {
+          publicBeneficiaries: targetPublic.join('%2C'),
+          first,
+          excludeSC2S,
+          wsClientId: uuid,
+        },
+        responseType: 'arraybuffer',
+      })
+    } catch (error) {
+      setError((error as AxiosError).message)
+      setIsLoading(false)
+    }
+  }
 
-      const blob = new Blob([response.data], {
+  useEffect(() => {
+    if (lastMessage && typeof lastMessage.data === 'object') {
+      const blob = new Blob([lastMessage.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       })
 
@@ -49,12 +53,10 @@ export default function Home() {
           'fr'
         )}.xlsx`
       )
-    } catch (error) {
-      setError((error as AxiosError).message)
-    } finally {
+
       setIsLoading(false)
     }
-  }
+  }, [lastMessage])
 
   const handleChange = (publicString: string) => {
     if (targetPublic.includes(publicString)) {
@@ -194,7 +196,9 @@ export default function Home() {
           Chargement en cours ... (cela peut prendre plusieurs minutes !)
         </div>
       )}
-      {lastMessage && isLoading && <div>{lastMessage.data}</div>}
+      {lastMessage && typeof lastMessage.data === 'string' && isLoading && (
+        <div>{lastMessage.data}</div>
+      )}
     </>
   )
 }
