@@ -199,6 +199,8 @@ export default function Home() {
       {lastMessage && typeof lastMessage.data === 'string' && isLoading && (
         <div>{lastMessage.data}</div>
       )}
+
+      <div className='disclaimer'>Si le téléchargement ne fonctionne pas du premier coup, veuillez réessayer après quelques minutes, le serveur a parfois besoin d'un peu de temps pour se réveiller :)</div>
     </>
   )
 }
